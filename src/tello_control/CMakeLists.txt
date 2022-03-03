@@ -54,7 +54,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
 	scripts/basic_image_publisher.py scripts/tello_image_publisher.py scripts/aruco_marker_pose_estimation_tf.py
-  scripts/aruco_marker_pose_tello.py scripts/path_gen.py
+  scripts/aruco_marker_pose_tello.py scripts/path_gen.py scripts/charuco_pose_estimator.py
 	DESTINATION lib/${PROJECT_NAME}
 	)
 

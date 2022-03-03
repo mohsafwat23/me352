@@ -17,7 +17,6 @@ import os
 import math
 import time
 import sys 
-#sys.path.append("/home/mohamed/dev_ws/install/opencv_tools/lib/python3.8/site-packages/opencv_tools")
 from tello_control.kalman import Kalman
 from tello_control.msg import TelloPose 
 # Import Python libraries
