@@ -1,8 +1,6 @@
 #!/usr/bin/env python
   
 '''
-Welcome to the ArUco Marker Generator!
-  
 This program:
   - Generates ArUco markers using OpenCV and Python
 '''

@@ -1,3 +1,6 @@
+"""
+This class is used to convert a video file to a set of images for calibration.
+"""
 import cv2
 import os
 

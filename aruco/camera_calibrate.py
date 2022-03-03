@@ -1,8 +1,6 @@
 #!/usr/bin/env python
   
 '''
-Welcome to the Camera Calibration Program!
-  
 This program:
   - Performs camera calibration using a chessboard.
 '''

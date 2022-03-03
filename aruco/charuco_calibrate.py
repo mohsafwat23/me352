@@ -1,6 +1,7 @@
-# System information:
-# - Linux Mint 18.1 Cinnamon 64-bit
-# - Python 2.7 with OpenCV 3.2.0
+'''
+This program:
+  - Performs camera calibration using a Charuco marker.
+'''
 
 import numpy
 import cv2

@@ -1,3 +1,8 @@
+'''
+This program:
+  - Generates ChArUco markers using OpenCV and Python
+'''
+
 import cv2
 import cv2.aruco as aruco
 
