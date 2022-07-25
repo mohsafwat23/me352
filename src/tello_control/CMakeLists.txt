@@ -14,6 +14,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(tello_control REQUIRED)
 
 
 set(msg_files
@@ -28,6 +29,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ADD_LINTER_TESTS
  )
 
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -54,7 +59,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
 	scripts/basic_image_publisher.py scripts/tello_image_publisher.py scripts/aruco_marker_pose_estimation_tf.py
-  scripts/aruco_marker_pose_tello.py scripts/path_gen.py scripts/charuco_pose_estimator.py
+  scripts/aruco_marker_pose_tello.py scripts/path_gen.py scripts/charuco_pose_estimator.py scripts/tello_keyboard.py
 	DESTINATION lib/${PROJECT_NAME}
 	)
 

@@ -186,7 +186,7 @@ class ArucoNode(Node):
       # the camera lens frame's:
       # x-axis points to the right
       # y-axis points straight down towards your toes
-      # z-axis points straight ahead away from your eye, out of the camera
+      # z-axis points straight ahead away from your eye, out of the camer
       #https://github.com/opencv/opencv/issues/8813
       for i, marker_id in enumerate(marker_ids):  
  

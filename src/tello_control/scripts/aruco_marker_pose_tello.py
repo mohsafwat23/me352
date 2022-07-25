@@ -22,6 +22,8 @@ import time
 import sys 
 #sys.path.append("/home/mohamed/dev_ws/install/opencv_tools/lib/python3.8/site-packages/opencv_tools")
 from tello_control.kalman import Kalman
+from tello_control.msg import TelloPose 
+
  
 # Import Python libraries
 import cv2 # OpenCV library
@@ -64,7 +66,7 @@ class ArucoNode(Node):
     self.declare_parameter("aruco_dictionary_name", "DICT_ARUCO_ORIGINAL")
     self.declare_parameter("aruco_marker_side_length", 0.1815)
     self.declare_parameter("camera_calibration_parameters_filename", "/home/mohamed/dev_ws/src/opencv_tools/data/calibration_chessboard.yaml")
-    self.declare_parameter("image_topic", "/video_frames")
+    self.declare_parameter("image_topic", "/drone_video_frames")
     self.declare_parameter("aruco_marker_name", "aruco_marker")
      
     # Read parameters
@@ -108,23 +110,30 @@ class ArucoNode(Node):
     # from the video_frames topic. The queue size is 10 messages.
 
 
-    self.H = np.array([
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                [0,1,0,0,0,0,0,0,0,0,0,0,0,0],
-                [0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-                [0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-                [0,0,0,0,1,0,0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,0,1,0,0,0,0,0,0,0]
-                ])
-    self.Q = 0.002*np.eye(14) #process noise covariance
-    self.R = np.identity(7) #0.3 #measurement noise covariance
-    self.x_hat_k = np.array([[-1.8,0,2,0,0,0,1,0,0,0,0,0,0,1]]).T # x_t = [T,q,T_dot,q_dot]
-    self.P_k = np.eye(14) #initialize covariance matrix
+    # self.H = np.array([
+    #             [1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    #             [0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    #             [0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    #             [0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+    #             [0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+    #             [0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+    #             [0,0,0,0,0,0,1,0,0,0,0,0,0,0]
+    #             ])
+    self.H = np.identity(6)
+
+    #self.Q = 0.002*np.eye(14) #process noise covariance
+    self.Q = 0.002*np.eye(6) #process noise covariance
+    #self.R = np.identity(7) #0.3 #measurement noise covariance
+    self.R = np.identity(6) #0.3 #measurement noise covariance
+
+    #self.x_hat_k = np.array([[-1.8,0,2,0,0,0,1,0,0,0,0,0,0,1]]).T # x_t = [T,q,T_dot,q_dot]
+    self.x_hat_k = np.array([[-1.8,0.,2.,0.,0.,0.]]).T # x_t = [T,T_dot]
+    #self.P_k = np.eye(14) #initialize covariance matrix
+    self.P_k = np.eye(6) #initialize covariance matrix
     self.kalman = Kalman(self.H, self.R, self.Q)
 
     self.subscription = self.create_subscription(
-      Image, 
+      TelloPose, 
       image_topic, 
       self.listener_callback, 
       10)
@@ -144,10 +153,15 @@ class ArucoNode(Node):
     Callback function.
     """
     # Display the message on the console
-    self.get_logger().info('Receiving video frame')
+    #self.get_logger().info('Receiving video frame')
   
     # Convert ROS Image message to OpenCV image
-    current_frame = self.bridge.imgmsg_to_cv2(data)
+    current_frame = self.bridge.imgmsg_to_cv2(data.img)
+
+    #Velocity of the drone from data
+    vel_x = data.velocity.x
+    vel_y = data.velocity.y
+    vel_z = data.velocity.z
      
     # Detect ArUco markers in the video frame
     (corners, marker_ids, rejected) = cv2.aruco.detectMarkers(
@@ -212,41 +226,41 @@ class ArucoNode(Node):
         # t.transform.rotation.z = quat[2] 
         # t.transform.rotation.w = quat[3] 
 
-        z_k_1 = np.array([[tvecs[i][0][0], tvecs[i][0][1], tvecs[i][0][2], quat[0], quat[1], quat[2], quat[3]]]).T
- 
+        #z_k_1 = np.array([[tvecs[i][0][0], tvecs[i][0][1], tvecs[i][0][2], quat[0], quat[1], quat[2], quat[3]]]).T
+        z_k_1 = np.array([[tvecs[i][0][0], tvecs[i][0][1], tvecs[i][0][2], vel_x, vel_y, vel_z]]).T
         self.x_hat_k, self.P_k = self.kalman.update(self.x_hat_k, self.P_k, z_k_1)
-                   
+
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'camera_depth_frame'
+        t.child_frame_id = self.aruco_marker_name
+        t.transform.translation.x = self.x_hat_k[0][0]
+        t.transform.translation.y = self.x_hat_k[1][0]
+        t.transform.translation.z = self.x_hat_k[2][0]
+        t.transform.rotation.x = quat[0] 
+        t.transform.rotation.y = quat[1] 
+        t.transform.rotation.z = quat[2] 
+        t.transform.rotation.w = quat[3] 
+        self.tfbroadcaster.sendTransform(t)
+        self.pos.position.x = self.x_hat_k[0][0]
+        self.pos.position.y = self.x_hat_k[1][0]
+        self.pos.position.z = self.x_hat_k[2][0]
+        self.pos.orientation.x = quat[0]
+        self.pos.orientation.y = quat[1]
+        self.pos.orientation.z = quat[2]
+        self.pos.orientation.w = quat[3]
+        self.pose_pub.publish(self.pos)    
+          
         # Draw the axes on the marker
         cv2.aruco.drawAxis(current_frame, self.mtx, self.dst, rvecs[i], tvecs[i], 0.05)        
 
     self.t_prev = t_now   
     # Display image
-    #self.pos.header.stamp = self.get_clock().now().to_msg()
-    self.pos.position.x = self.x_hat_k[0][0]
-    self.pos.position.y = self.x_hat_k[1][0]
-    self.pos.position.z = self.x_hat_k[2][0]
-    self.pos.orientation.x = self.x_hat_k[3][0]
-    self.pos.orientation.y = self.x_hat_k[4][0]
-    self.pos.orientation.z = self.x_hat_k[5][0]
-    self.pos.orientation.w = self.x_hat_k[6][0]
-    #print(self.x_hat_k[0][0])
-    self.pose_pub.publish(self.pos)
+
 
     # Create the coordinate transform
-    t = TransformStamped()
-    t.header.stamp = self.get_clock().now().to_msg()
-    t.header.frame_id = 'camera_depth_frame'
-    t.child_frame_id = self.aruco_marker_name
-    t.transform.translation.x = self.x_hat_k[0][0]
-    t.transform.translation.y = self.x_hat_k[1][0]
-    t.transform.translation.z = self.x_hat_k[2][0]
-    t.transform.rotation.x = self.x_hat_k[3][0] 
-    t.transform.rotation.y = self.x_hat_k[4][0] 
-    t.transform.rotation.z = self.x_hat_k[5][0] 
-    t.transform.rotation.w = self.x_hat_k[6][0] 
 
     # Send the transform
-    self.tfbroadcaster.sendTransform(t)    
     cv2.imshow("camera", current_frame)
     
     cv2.waitKey(1)

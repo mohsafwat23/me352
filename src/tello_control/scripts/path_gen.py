@@ -65,7 +65,7 @@ class PathGenNode(Node):
             
 
         self.path_pub.publish(path_fin)
-        sleep(0.5)
+        #sleep(0.02)
         
 
 def main(args=None):

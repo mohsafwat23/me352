@@ -39,7 +39,7 @@ class DroneImagePublisher(Node):
         self.me.streamon()
 
         # Create the publisher. This publisher will publish an Image
-        self.publisher_ = self.create_publisher(TelloPose, 'drone_video_frames', 2)
+        self.publisher_ = self.create_publisher(TelloPose, 'drone_video_frames', 5)
         self.tellpos = TelloPose()
         # self.subscription = self.create_subscription(
         # Twist, 
@@ -48,7 +48,7 @@ class DroneImagePublisher(Node):
         # 10)
         # self.move = Twist()  
         # We will publish a message every 0.02 seconds
-        timer_period = 0.02  # seconds
+        timer_period = 0.025  # seconds
 
         # Create the timer
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -61,9 +61,9 @@ class DroneImagePublisher(Node):
         img = cv2.resize(img,(self.w,self.h))
         tim = time.time()
         f = 1/(tim - self.t_prev)
-        self.tellpos.velocity.x = self.me.get_speed_x()
-        self.tellpos.velocity.y = self.me.get_speed_y()
-        self.tellpos.velocity.z = self.me.get_speed_z()
+        self.tellpos.velocity.x = float(self.me.get_speed_x())/100
+        self.tellpos.velocity.y = float(self.me.get_speed_y())/100
+        self.tellpos.velocity.z = float(self.me.get_speed_z())/100
 
         self.tellpos.img = self.br.cv2_to_imgmsg(img)
         #r_acc = rot.apply(acc)        
@@ -74,7 +74,7 @@ class DroneImagePublisher(Node):
         
         self.t_prev = tim
         # Display the message on the console
-        self.get_logger().info('Publishing video frame')
+        #self.get_logger().info('Publishing video frame')
    
 def main(args=None):
    
